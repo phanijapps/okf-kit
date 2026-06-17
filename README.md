@@ -7,7 +7,8 @@ frontmatter + body), the file path is its id, and relative Markdown links form a
 knowledge graph. `okf-kit` is an agent-native toolkit for that format: a pure
 Python core exposed two ways — the **`okf` CLI** and the **`okf-mcp`** MCP server
 (the universal layer for Claude Code, Antigravity, and any MCP client) — plus an
-**`okf-author`** skill. No web app, no REST/GraphQL.
+**`okf-search`** skill and an **`okf-author`** skill. No web app, no
+REST/GraphQL.
 
 > OKF is "what knowledge looks like once loaded" — designed for LLMs, not
 > SPARQL engines. `okf-kit` makes a folder of Markdown queryable, citeable, and
@@ -34,6 +35,31 @@ source .venv/bin/activate    # …or activate once, then use `okf` / `okf-mcp` b
 > installs the same `okf` and `okf-mcp` commands.
 
 The examples below use `uv run`; drop the prefix if you've activated the venv.
+
+## Install agent skills
+
+Install the OKF Agent Skills into a project-local agent configuration:
+
+```bash
+uv run okf agent install claude-code --scope project
+uv run okf agent install codex --scope project
+```
+
+Project scope writes:
+
+- Claude Code: `.claude/skills/{okf-search,okf-author}/SKILL.md`
+- Codex: `.codex/skills/{okf-search,okf-author}/SKILL.md`
+
+Use `--dry-run` to preview writes and `--update` to refresh files previously
+installed by OKF. This installs skills only: `okf-search` for read-only
+progressive context and `okf-author` for create/update authoring loops,
+including evidence-backed implementation wikis for code repositories. It does
+not install subagents, hooks, MCP config, or plugins.
+
+Run project-scope installs from the repository where you want the skills
+available. The installer refuses to write inside an OKF bundle root or
+subdirectory so agent skills do not become knowledge concepts by accident. Use
+`--scope user` to install into the user-level agent skill directory instead.
 
 ## Quick start (build a knowledge base)
 
@@ -116,9 +142,10 @@ escapes), on both the read and write paths.
 ## Status
 
 **v0.1 — build + use a single OKF bundle.** In scope: parse/validate (SPEC §9),
-search, progressive-context read, `init`/`new`/`index regen`, the MCP server, the
-`okf-author` skill, and **`okf serve`** — a read-only browser UI (tree, search,
-graph, reader) launched on demand by an agent harness. **Next:** web-UI editing
+search, progressive-context read, `init`/`new`/`index regen`, the MCP server,
+the `okf-search` and `okf-author` skills, and **`okf serve`** — a read-only
+browser UI (tree, search, graph, reader) launched on demand by an agent harness.
+**Next:** web-UI editing
 (frontmatter form, Markdown editor, link autocomplete, CRUD) and bundle
 import/export. **Later milestones (see the [`project/backlog`](wiki/project/backlog.md) wiki concept):** producer
 (extract/enrich), governance (RBAC/PII/signing), and multi-bundle federation —

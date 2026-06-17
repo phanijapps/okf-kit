@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from okf_kit.cli import main
 
 
@@ -79,3 +80,122 @@ def test_index_regen(tmp_path: Path, capsys):
     code, _, _ = _run(["index", "regen", str(tmp_path)], capsys)
     assert code == 0
     assert (tables / "index.md").exists()
+
+
+def test_agent_install_help(capsys):
+    code, out, _ = _run(["agent", "install", "--help"], capsys)
+    assert code == 0
+    assert "claude-code" in out
+    assert "codex" in out
+    assert "--scope" in out
+    assert "--dry-run" in out
+    assert "--update" in out
+
+
+@pytest.mark.parametrize(
+    ("target", "skill_prefix", "manifest_rel"),
+    [
+        ("claude-code", ".claude/skills", ".claude/okf-agent-assets.json"),
+        ("codex", ".codex/skills", ".codex/okf-agent-assets.json"),
+    ],
+)
+def test_agent_install_project_dry_run(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+    target: str,
+    skill_prefix: str,
+    manifest_rel: str,
+):
+    monkeypatch.chdir(tmp_path)
+    code, out, _ = _run(["agent", "install", target, "--scope", "project", "--dry-run"], capsys)
+    assert code == 0
+    assert f"would write {skill_prefix}/okf-author/SKILL.md" in out
+    assert f"would write {skill_prefix}/okf-search/SKILL.md" in out
+    assert f"would write {manifest_rel}" in out
+    assert not (tmp_path / skill_prefix.split("/", maxsplit=1)[0]).exists()
+
+
+@pytest.mark.parametrize(
+    ("target", "skill_prefix", "manifest_rel"),
+    [
+        ("claude-code", ".claude/skills", ".claude/okf-agent-assets.json"),
+        ("codex", ".codex/skills", ".codex/okf-agent-assets.json"),
+    ],
+)
+def test_agent_install_project_writes_files(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+    target: str,
+    skill_prefix: str,
+    manifest_rel: str,
+):
+    monkeypatch.chdir(tmp_path)
+    code, out, _ = _run(["agent", "install", target, "--scope", "project"], capsys)
+    assert code == 0
+    assert f"wrote {skill_prefix}/okf-author/SKILL.md" in out
+    assert f"wrote {skill_prefix}/okf-search/SKILL.md" in out
+    assert f"wrote {manifest_rel}" in out
+    assert (tmp_path / skill_prefix / "okf-author" / "SKILL.md").is_file()
+    assert (tmp_path / skill_prefix / "okf-search" / "SKILL.md").is_file()
+    manifest = json.loads((tmp_path / manifest_rel).read_text(encoding="utf-8"))
+    assert manifest["target"] == target
+    assert manifest["scope"] == "project"
+
+
+def test_agent_install_unmanaged_file_exits_2(tmp_path: Path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    skill = tmp_path / ".codex" / "skills" / "okf-author" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("local\n", encoding="utf-8")
+
+    code, _, err = _run(["agent", "install", "codex", "--scope", "project", "--update"], capsys)
+    assert code == 2
+    assert "unmanaged" in err
+
+
+def test_agent_install_refuses_okf_bundle_root(tmp_path: Path, capsys, monkeypatch):
+    bundle = tmp_path / "kb"
+    code, _, _ = _run(["init", str(bundle)], capsys)
+    assert code == 0
+
+    monkeypatch.chdir(bundle)
+    code, _, err = _run(["agent", "install", "codex", "--scope", "project"], capsys)
+    assert code == 2
+    assert "inside an OKF bundle" in err
+    assert not (bundle / ".codex").exists()
+
+    code, _, _ = _run(["validate", str(bundle)], capsys)
+    assert code == 0
+
+
+def test_agent_install_refuses_okf_bundle_subdirectory(tmp_path: Path, capsys, monkeypatch):
+    bundle = tmp_path / "kb"
+    code, _, _ = _run(["init", str(bundle)], capsys)
+    assert code == 0
+    subdir = bundle / "notes"
+    subdir.mkdir()
+
+    monkeypatch.chdir(subdir)
+    code, _, err = _run(["agent", "install", "codex", "--scope", "project"], capsys)
+    assert code == 2
+    assert "inside an OKF bundle" in err
+    assert not (subdir / ".codex").exists()
+    assert not (bundle / ".codex").exists()
+
+    code, _, _ = _run(["validate", str(bundle)], capsys)
+    assert code == 0
+
+
+def test_agent_install_nonwritable_project_root_exits_2(tmp_path: Path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    tmp_path.chmod(0o500)
+    try:
+        code, _, err = _run(["agent", "install", "codex", "--scope", "project"], capsys)
+    finally:
+        tmp_path.chmod(0o700)
+
+    assert code == 2
+    assert "ownership manifest" in err
+    assert not (tmp_path / ".codex").exists()

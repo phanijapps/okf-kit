@@ -21,7 +21,10 @@ from okf_kit.core.validate import Report, validate_bundle
 
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as exc:
+        return exc.code if isinstance(exc.code, int) else 2
     try:
         return _dispatch(args)
     except ConceptNotFound as exc:
@@ -92,6 +95,16 @@ def _build_parser() -> argparse.ArgumentParser:
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=0)
 
+    p_agent = sub.add_parser("agent", help="Install OKF agent assets.")
+    agent_sub = p_agent.add_subparsers(dest="agent_command", required=True)
+    p_agent_install = agent_sub.add_parser(
+        "install", help="Install OKF skills for Claude Code or Codex."
+    )
+    p_agent_install.add_argument("target", choices=("claude-code", "codex"))
+    p_agent_install.add_argument("--scope", choices=("project", "user"), default="project")
+    p_agent_install.add_argument("--dry-run", action="store_true")
+    p_agent_install.add_argument("--update", action="store_true")
+
     return parser
 
 
@@ -110,6 +123,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         return _cmd_index_regen(args)
     if args.command == "serve":
         return _cmd_serve(args)
+    if args.command == "agent":
+        return _cmd_agent(args)
     return 2  # unreachable: argparse requires a subcommand
 
 
@@ -178,6 +193,27 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     from okf_kit.web.server import serve as serve_web
 
     serve_web(Path(args.bundle), host=args.host, port=args.port)
+    return 0
+
+
+def _cmd_agent(args: argparse.Namespace) -> int:
+    if args.agent_command == "install":
+        return _cmd_agent_install(args)
+    return 2
+
+
+def _cmd_agent_install(args: argparse.Namespace) -> int:
+    from okf_kit.agent_install import install_agent_assets
+
+    actions = install_agent_assets(
+        Path.cwd(),
+        args.target,
+        scope=args.scope,
+        dry_run=args.dry_run,
+        update=args.update,
+    )
+    for action in actions:
+        print(action.message)
     return 0
 
 
