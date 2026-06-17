@@ -44,7 +44,13 @@ To install or reinstall the CLI on this machine from this checkout:
 uv tool install --force --editable .
 ```
 
-This puts `okf` and `okf-mcp` on uv's tool path. Verify with:
+Or install directly from GitHub:
+
+```bash
+uv tool install --force git+https://github.com/phanijapps/okf-kit.git
+```
+
+Both commands put `okf` and `okf-mcp` on uv's tool path. Verify with:
 
 ```bash
 okf --help
@@ -100,6 +106,26 @@ Start the server over stdio (it registers the bundle by its directory name):
 uv run okf-mcp mykb
 ```
 
+If you installed with `uv tool install`, use the tool command directly:
+
+```bash
+okf-mcp /absolute/path/to/mykb
+```
+
+For Codex, add OKF as a project-scoped MCP server from the repository where you
+want Codex to use the bundle:
+
+```bash
+codex mcp add okf -- okf-mcp /absolute/path/to/mykb
+```
+
+This writes the MCP entry into Codex config. You can inspect active servers in
+Codex with `/mcp` or with:
+
+```bash
+codex mcp --help
+```
+
 For Claude Code, add an MCP server config (`.mcp.json`). Point `uv` at this repo
 and at your bundle (absolute paths):
 
@@ -114,7 +140,7 @@ and at your bundle (absolute paths):
 }
 ```
 
-(If you installed `okf-mcp` onto your `PATH` via pip, the config simplifies to
+(If you installed `okf-mcp` onto your `PATH` via `uv tool install` or pip, the config simplifies to
 `"command": "okf-mcp", "args": ["/absolute/path/to/mykb"]`.)
 
 ## Browse in a browser (`okf serve`)
