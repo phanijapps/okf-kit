@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from okf_kit.mcp import _READ_DESC, _SEARCH_DESC, _VALIDATE_DESC
+from okf_kit.mcp import _CREATE_DESC, _INIT_DESC, _READ_DESC, _SEARCH_DESC, _VALIDATE_DESC
 
 DOCS = Path(__file__).resolve().parent.parent.parent / "docs"
 
@@ -28,3 +28,5 @@ def test_tools_md_synced_with_mcp_descriptions():
     assert _extract_description(md, "search") == _SEARCH_DESC
     assert _extract_description(md, "read_concept") == _READ_DESC
     assert _extract_description(md, "validate") == _VALIDATE_DESC
+    assert _extract_description(md, "create_concept") == _CREATE_DESC
+    assert _extract_description(md, "init_bundle") == _INIT_DESC

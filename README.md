@@ -91,9 +91,11 @@ uv run okf serve mykb
 Then open the printed URL. Editing (frontmatter form, Markdown editor, CRUD) is
 the next milestone; this is read-only.
 
-The server exposes three tools — **`search`**, **`read_concept`** (with
-`depth` for progressive context), **`validate`** — plus an
-`okf://<bundle>/concepts/<id>.md` resource per concept.
+The server exposes five tools — **`search`**, **`read_concept`** (with `depth`
+for progressive context), **`validate`**, plus **`create_concept`** (enforces a
+richness floor: ≥120 words + a depth section, so MCP-authored concepts are rich
+by construction) and **`init_bundle`** — and an `okf://<bundle>/concepts/<id>.md`
+resource per concept.
 
 ## Architecture
 
@@ -138,5 +140,6 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md). Gates (`ruff`, `mypy --strict`,
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE). OKF itself is an open,
-vendor-neutral format published under the same terms.
+MIT License — see [`LICENSE`](LICENSE). (The OKF format itself is a separate,
+vendor-neutral spec published by Google under Apache 2.0; this project is
+MIT-licensed.)

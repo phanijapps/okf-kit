@@ -66,17 +66,17 @@ def _render_index(
         lines.append(f"# {type_key}")
         for concept in sorted(by_type[type_key], key=lambda c: c.cid):
             title = _str_field(concept, "title") or concept.cid.rsplit("/", 1)[-1]
-            entry = f"- [{title}]({concept.path.name})"
+            entry = f"* [{title}]({concept.path.name})"
             description = _str_field(concept, "description")
             if description:
-                entry += f" — {description}"
+                entry += f" - {description}"
             lines.append(entry)
 
     if subdirs:
         lines.append("")
         lines.append("# Subdirectories")
         for sub in subdirs:
-            lines.append(f"- [{sub.name}]({sub.name}/index.md)")
+            lines.append(f"* [{sub.name}]({sub.name}/index.md)")
 
     return "\n".join(lines) + "\n"
 

@@ -1,7 +1,8 @@
 """The ``okf-mcp`` server (FastMCP, stdio).
 
 Exposes an OKF bundle to MCP clients (Claude Code, Antigravity, any MCP client)
-as three tools — ``search``, ``read_concept``, ``validate`` — plus an
+as five tools — ``search``, ``read_concept``, ``validate``, ``create_concept``,
+``init_bundle`` — plus an
 ``okf://<bundle>/concepts/<cid>.md`` resource per concept. Tools are thin
 wrappers over :mod:`okf_kit.core`; the bundle is registered at startup by
 directory name.
@@ -21,6 +22,7 @@ from okf_kit.core import context as context_mod
 from okf_kit.core.links import iter_concept_files
 from okf_kit.core.parse import parse_concept
 from okf_kit.core.search import Hit, build_index, search
+from okf_kit.core.templates import create_concept, init_bundle
 from okf_kit.core.validate import validate_bundle
 
 _SEARCH_DESC = (
@@ -37,7 +39,7 @@ _READ_DESC = (
     "Read one OKF concept by id (bundle-relative path without .md, e.g. 'tables/users'): "
     "returns frontmatter + Markdown body. Set depth=0 (default) for just this concept; set "
     "depth=1..N to progressively expand the N-hop neighborhood — the concept plus concepts it "
-    "links to via relative Markdown links, concatenated in BFS order within token_budget "
+    "links to via Markdown links, concatenated in BFS order within token_budget "
     "(default 8000). This is the progressive-context loader: start at depth 0, raise depth only "
     "if you need surrounding context; a trailing marker names any neighbors omitted. Params: "
     "bundle, concept_id, depth, token_budget. Example: read_concept(bundle='analytics', "
@@ -51,6 +53,26 @@ _VALIDATE_DESC = (
     "info (unknown types, extension keys, nested sub-bundle markers, okf_version). Permissive — "
     "never rejects for missing optional fields/unknown types. Use before publishing or in CI. "
     "Params: bundle. Example: validate(bundle='analytics')."
+)
+
+_CREATE_DESC = (
+    "Create a rich OKF concept (MCP authoring). ENFORCES A RICHNESS FLOOR: the "
+    "body must be >=120 words AND contain a depth section heading (# Examples / "
+    "# Schema / # API / # Citations / # Steps / # Definition / # Overview). Thin "
+    "bodies are REJECTED with a message saying what is missing — enrich and "
+    "retry. This is why anything created via MCP has good information by "
+    "construction. Params: bundle (registered name), cid (concept id, e.g. "
+    "'tables/users'), type, title, description, body (Markdown), tags (optional "
+    "list). Example: create_concept(bundle='wiki', cid='core/parse', "
+    "type='Module', title='core/parse', description='Frontmatter parsing.', "
+    "body='...at least 120 words with an # Examples section...')."
+)
+
+_INIT_DESC = (
+    "Initialize (or re-initialize) an OKF bundle root: writes index.md declaring "
+    "okf_version. Idempotent — use it to (re)create a bundle before authoring "
+    "concepts via create_concept. Params: bundle (registered name), okf_version "
+    "(default '0.1'). Example: init_bundle(bundle='wiki')."
 )
 
 
@@ -100,6 +122,58 @@ def tool_validate(reg: BundleRegistry, bundle: str) -> dict[str, Any]:
     return validate_bundle(reg.get(bundle)).to_dict()
 
 
+# Richness floor — the mechanism that makes "created via MCP => good info".
+_RICH_MIN_WORDS = 120
+_RICHNESS_SECTIONS = frozenset(
+    {"examples", "schema", "api", "citations", "steps", "definition", "endpoints", "overview"}
+)
+
+
+def _check_richness(body: str) -> None:
+    """Reject thin concept bodies (too few words, or no depth section)."""
+    words = len(body.split())
+    sections = {
+        line[2:].strip().lower() for line in body.splitlines() if line.startswith("# ")
+    }
+    found = sections & _RICHNESS_SECTIONS
+    problems: list[str] = []
+    if words < _RICH_MIN_WORDS:
+        problems.append(f"{words} words (need >= {_RICH_MIN_WORDS})")
+    if not found:
+        problems.append(
+            "no depth section (add one of: " + ", ".join(sorted(_RICHNESS_SECTIONS)) + ")"
+        )
+    if problems:
+        raise ValueError("concept body is too thin: " + "; ".join(problems))
+
+
+def tool_create_concept(
+    reg: BundleRegistry,
+    bundle: str,
+    cid: str,
+    type: str,
+    title: str,
+    description: str,
+    body: str,
+    tags: list[str] | None = None,
+) -> dict[str, Any]:
+    """Create a concept via MCP, enforcing the richness floor.
+
+    Delegates containment + atomic exclusive create to ``core.templates.create_concept``.
+    """
+    _check_richness(body)
+    path = create_concept(
+        reg.get(bundle), cid, type, title=title, description=description, tags=tags, body=body
+    )
+    return {"created": True, "cid": cid, "path": str(path)}
+
+
+def tool_init_bundle(reg: BundleRegistry, bundle: str, okf_version: str = "0.1") -> dict[str, Any]:
+    """Initialize a bundle root via MCP (idempotent)."""
+    path = init_bundle(reg.get(bundle), okf_version=okf_version)
+    return {"initialized": True, "path": str(path)}
+
+
 def make_server(bundles: dict[str, Any]) -> FastMCP:
     """Build a FastMCP server with tools + per-concept ``okf://`` resources."""
     reg = BundleRegistry(bundles)
@@ -124,6 +198,22 @@ def make_server(bundles: dict[str, Any]) -> FastMCP:
     @server.tool(name="validate", description=_VALIDATE_DESC)
     def _validate(bundle: str) -> dict[str, Any]:
         return tool_validate(reg, bundle)
+
+    @server.tool(name="create_concept", description=_CREATE_DESC)
+    def _create_concept(
+        bundle: str,
+        cid: str,
+        type: str,
+        title: str,
+        description: str,
+        body: str,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        return tool_create_concept(reg, bundle, cid, type, title, description, body, tags)
+
+    @server.tool(name="init_bundle", description=_INIT_DESC)
+    def _init_bundle(bundle: str, okf_version: str = "0.1") -> dict[str, Any]:
+        return tool_init_bundle(reg, bundle, okf_version)
 
     _register_resources(server, reg)
     return server

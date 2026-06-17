@@ -1,9 +1,8 @@
 """Relative-link extraction, resolution, and the path-containment guard.
 
-Builds the OKF knowledge-graph edges from **relative** Markdown links
-(REQ-CONS-10..13, SPEC §5.3). External (``://``) and absolute (leading ``/``)
-links are not edges in v0.1; broken and out-of-bundle links are dropped
-silently.
+Builds the OKF knowledge-graph edges from **relative AND absolute
+(bundle-relative)** Markdown links (SPEC §5). External (``://``) links are not
+edges; broken and out-of-bundle links are dropped silently (SPEC §5.3).
 
 SECURITY: every caller-supplied concept id and every link target is resolved
 and confined to the bundle root. ``..`` traversal, absolute paths, and symlink
@@ -31,7 +30,7 @@ def is_external_target(target: str) -> bool:
 
 
 def is_absolute_target(target: str) -> bool:
-    """Bundle-absolute link (leading ``/``) — not a *relative* edge in v0.1."""
+    """Bundle-absolute link (leading ``/``) — resolved against the bundle root (SPEC §5.1)."""
     return target.startswith("/")
 
 
@@ -92,17 +91,26 @@ def resolve_cid_path(root: Path, cid: str) -> Path | None:
 
 
 def extract_link_targets(body: str) -> list[str]:
-    """Raw relative ``.md`` link targets found in ``body`` (pre-resolution).
+    """Raw ``.md`` link targets in ``body`` (relative + absolute), pre-resolution.
 
-    External and absolute targets are excluded.
+    External (``://``) targets are excluded; relative and bundle-absolute
+    (leading ``/``) targets are both kept as graph edges (SPEC §5).
     """
     targets: list[str] = []
     for match in _LINK_RE.finditer(body):
         target = match.group(1)
-        if is_external_target(target) or is_absolute_target(target):
+        if is_external_target(target):
             continue
         targets.append(target)
     return targets
+
+
+def _resolve_target(target: str, src_dir: Path, root: Path) -> Path:
+    """Resolve a link target: absolute (leading ``/``) against the bundle root,
+    relative against the source document's directory (SPEC §5.1/§5.2)."""
+    if is_absolute_target(target):
+        return (root / target.lstrip("/")).resolve()
+    return (src_dir / target).resolve()
 
 
 def concept_outgoing(root: Path, concept: Concept) -> list[str]:
@@ -112,7 +120,7 @@ def concept_outgoing(root: Path, concept: Concept) -> list[str]:
     seen: set[str] = set()
     outgoing: list[str] = []
     for target in extract_link_targets(concept.body):
-        resolved = (src_dir / target).resolve()
+        resolved = _resolve_target(target, src_dir, root_resolved)
         if not is_within(resolved, root_resolved):
             continue
         if not resolved.is_file():
@@ -143,7 +151,7 @@ def broken_links(root: Path, concept: Concept) -> list[str]:
     for target in extract_link_targets(concept.body):
         if target in seen:
             continue
-        resolved = (src_dir / target).resolve()
+        resolved = _resolve_target(target, src_dir, root_resolved)
         if not is_within(resolved, root_resolved) or not resolved.is_file():
             seen.add(target)
             broken.append(target)

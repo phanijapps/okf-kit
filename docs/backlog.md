@@ -57,3 +57,29 @@ Each is a conscious v0.1 deferral, not an oversight.
 
 - Run `pip-audit` / Dependabot over `mcp`, `pyyaml`, transitive deps in CI.
 - ReDoS of `_LINK_RE` not formally verified (it's linear; low risk).
+
+## Spec alignment (review vs GoogleCloudPlatform/knowledge-catalog okf/SPEC.md)
+
+Closed:
+- **§5 cross-linking** — graph edges + progressive context now follow BOTH
+  relative and absolute (bundle-relative) links (absolute is the spec-recommended
+  form; previously relative-only). See `links.py` `_resolve_target`.
+- **§6 index.md style** — the generator emits spec-style `*` bullets and ` - `
+  separators.
+
+Intentionally kept (non-blocking / defensible):
+- `invalid-cid` warning — OKF defines no filename regex; ours
+  (`[A-Za-z0-9_][A-Za-z0-9_.-]*`) is an addition used for path-containment.
+  Emitted as a *warning* only, so it doesn't affect conformance; a concept whose
+  id fails it is also unaddressable by `read_concept` (containment), which is the
+  security rationale.
+- Non-mapping YAML frontmatter → error — the spec says "parseable frontmatter
+  block"; we additionally require a mapping. Stricter, defensible.
+- Non-root `index.md` carrying frontmatter → `info`, not error — spec §11 permits
+  frontmatter only in the root index; we treat nested-index frontmatter as a
+  forward-compat sub-bundle marker (lenient, OKF's permissive ethos).
+
+Still open (low value):
+- **§9 conformance rule 3** — reserved files must follow §6/§7 structure when
+  present. We catch frontmatter errors in `index.md`/`log.md` but don't validate
+  their *body* structure (e.g. `log.md` ISO-8601 date headings). Soft; deferred.

@@ -12,7 +12,7 @@ Markdown); the `okf-mcp` server is read+validate.
    value → generic body scaffold).
 3. **Author** — fill the body; use `# Schema`, `# Examples`, `# Citations`
    conventions where they fit.
-4. **Link** — add **relative** links (`[churn](../metrics/churn.md)`); find
+4. **Link** — add links (the spec recommends absolute, e.g. `[churn](/metrics/churn.md)`; relative also works, e.g. `[churn](../metrics/churn.md)`); find
    targets with `okf search mykb "<term>"`.
 5. **Validate** — `okf validate mykb`. Fix errors (missing frontmatter, empty
    `type`); warnings/info are non-blocking.

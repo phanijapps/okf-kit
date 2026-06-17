@@ -29,6 +29,7 @@ def test_regenerate_indexes_type_grouped_with_subdirs(tmp_path):
     assert "# Table" in tables_idx
     assert "customers" in tables_idx and "orders" in tables_idx
     assert "Customer master data" in tables_idx
+    assert "* [Customers](customers.md) - Customer master data" in tables_idx  # SPEC §6 style
 
     root_idx = (tmp_path / "index.md").read_text()
     assert "tables" in root_idx and "playbooks" in root_idx  # subdirectories linked

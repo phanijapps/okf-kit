@@ -89,5 +89,5 @@ findings in `docs/backlog.md` rather than dropping them.
 
 ## License
 
-By contributing you agree your contributions are licensed under the Apache
-License 2.0 (see [`LICENSE`](LICENSE)).
+By contributing you agree your contributions are licensed under the MIT
+License (see [`LICENSE`](LICENSE)).

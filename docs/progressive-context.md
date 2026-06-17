@@ -9,7 +9,7 @@ loads the minimum it needs and expands on demand, always under a token budget.
 1. **`search`** — a hit list only: `cid, title, type, snippet, score`. No bodies.
 2. **`read_concept(cid, depth=0)`** — one full concept (frontmatter + body).
 3. **`read_concept(cid, depth=1..N)`** — the concept plus its N-hop neighborhood
-   (concepts reachable via relative links), concatenated as Markdown.
+   (concepts reachable via their Markdown links), concatenated as Markdown.
 
 ## Token-budget semantics
 

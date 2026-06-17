@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "okf": {
+      "command": "uv",
+      "args": ["run", "--project", "./", "okf-mcp", "./wiki"]
+    }
+  }
+}

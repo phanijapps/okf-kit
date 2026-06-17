@@ -72,7 +72,7 @@ okf-kit/
 │   │   ├── model.py      # Concept, Frontmatter, Bundle dataclasses
 │   │   ├── parse.py      # line-1 --- split; yaml.safe_load; graceful fallback
 │   │   ├── validate.py   # SPEC §9 → Report{errors,warnings,info}
-│   │   ├── links.py      # extract + resolve relative .md links → concept IDs
+│   │   ├── links.py      # extract + resolve .md links (relative + absolute) → concept IDs
 │   │   ├── search.py     # inverted index + ranking (title>frontmatter>body)
 │   │   ├── context.py    # BFS neighborhood walk within token budget
 │   │   ├── index.py      # regenerate_indexes() — per-dir index.md (type-grouped)
@@ -157,7 +157,7 @@ The agent loads the minimum it needs and expands on demand, always under a token
 **Funnel (cheap → expensive):**
 1. `search` → hit list only: `cid, title, type, snippet, score`. Cheap; no bodies.
 2. `read_concept(cid, depth=0)` → one full concept (frontmatter + body).
-3. `read_concept(cid, depth=1..N)` → concept + N-hop neighborhood (concepts reachable via relative links), concatenated markdown.
+3. `read_concept(cid, depth=1..N)` → concept + N-hop neighborhood (concepts reachable via their links), concatenated markdown.
 
 **Token-budget semantics:**
 - Every context-returning tool takes `token_budget` (default 8000).
@@ -182,7 +182,7 @@ Transport: **stdio**. Resources: `okf://<bundle>/concepts/<path>.md` → frontma
 
 `context` is **not** a 4th tool — it is `read_concept(depth>0)`. One primitive, two behaviors.
 
-**Building is CLI + skill, not MCP.** The server stays read+validate (which already *supports* authoring: `search` finds link targets, `validate` checks what you wrote). Scaffolding/creation/indexing happen via the `okf` CLI (`init` / `new` / `index regen`) and the `okf-author` skill — the agent writes `.md` files directly with its own file tools, the most OKF-idiomatic path. MCP write tools are deferred.
+**Building is CLI + skill, and MCP can create too.** The server is read+validate (which already *supports* authoring: `search` finds link targets, `validate` checks what you wrote) **plus** `create_concept` and `init_bundle`. `create_concept` **enforces a richness floor** (≥120 words + a depth section; rejects thin bodies with an actionable message) — so anything authored *via MCP* is rich by construction (the user's "recreate via MCP → good info" requirement). Thin-stub scaffolding (`okf new`) and indexing (`okf index regen`) remain CLI+skill.
 
 ---
 
@@ -202,7 +202,7 @@ okf index    regen <bundle>                            # regenerate per-director
 The `okf-author` skill (`okf-kit/skills/okf-author/SKILL.md`) is the agent-facing entry point for **building** a KB. It teaches the OKF format and runs the loop:
 1. **Scope** — decide the concept's `type` and path (pick a known type or invent one).
 2. **Scaffold** — `okf new <bundle> <type> <path>` writes a correctly-frontmatter'd stub from the type template.
-3. **Author** — fill the body (`# Schema` / `# Examples` / `# Citations` conventions where relevant); add **relative** links to existing concepts (use `okf search` to find link targets).
+3. **Author** — fill the body (`# Schema` / `# Examples` / `# Citations` conventions where relevant); add links to existing concepts (the spec recommends absolute, §5.1; use `okf search` to find link targets).
 4. **Validate** — `okf validate` → fix any errors (empty `type`, malformed frontmatter).
 5. **Index** — `okf index regen` updates per-directory `index.md`.
 Built-in templates (Table, Metric, Runbook, Playbook, API, …) with a generic fallback; unknown types use the generic template and are tolerated.

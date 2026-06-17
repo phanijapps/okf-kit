@@ -6,7 +6,15 @@ from pathlib import Path
 
 import pytest
 from okf_kit.core.context import ConceptNotFound
-from okf_kit.mcp import BundleRegistry, make_server, tool_read_concept, tool_search, tool_validate
+from okf_kit.mcp import (
+    BundleRegistry,
+    make_server,
+    tool_create_concept,
+    tool_init_bundle,
+    tool_read_concept,
+    tool_search,
+    tool_validate,
+)
 
 
 def _bundle(tmp_path: Path) -> Path:
@@ -51,11 +59,11 @@ def test_tool_validate_returns_report_dict(tmp_path: Path):
     assert "errors" in report and "warnings" in report and "info" in report
 
 
-def test_make_server_registers_three_tools(tmp_path: Path):
+def test_make_server_registers_all_tools(tmp_path: Path):
     server = make_server({"kb": _bundle(tmp_path)})
     tools = asyncio.run(server.list_tools())
     names = {t.name for t in tools}
-    assert {"search", "read_concept", "validate"} <= names
+    assert {"search", "read_concept", "validate", "create_concept", "init_bundle"} <= names
     for tool in tools:
         assert tool.description and len(tool.description) > 30  # agent-triggerable
 
@@ -66,3 +74,35 @@ def test_make_server_registers_okf_resources(tmp_path: Path):
     uris = {str(r.uri) for r in resources}
     assert "okf://kb/concepts/a.md" in uris
     assert "okf://kb/concepts/tables/users.md" in uris
+
+
+# --- create_concept (richness floor) + init_bundle -------------------------
+
+
+def test_tool_create_concept_rejects_thin_body(tmp_path: Path):
+    reg = BundleRegistry({"kb": _bundle(tmp_path)})
+    thin = "# Stub\n\nshort body\n"  # too few words, no depth section
+    with pytest.raises(ValueError):
+        tool_create_concept(reg, "kb", "thin", "Table", "T", "d", thin)
+
+
+def test_tool_create_concept_accepts_rich_body(tmp_path: Path):
+    reg = BundleRegistry({"kb": _bundle(tmp_path)})
+    rich = "# Overview\n\n" + ("word " * 130) + "\n\n# Examples\n\n```\nokf new kb Table t\n```\n"
+    res = tool_create_concept(reg, "kb", "rich", "Table", "Rich", "a rich concept", rich)
+    assert res["created"] is True
+    assert (tmp_path / "rich.md").is_file()
+
+
+def test_tool_create_concept_rejects_traversal(tmp_path: Path):
+    reg = BundleRegistry({"kb": _bundle(tmp_path)})
+    rich = "# Overview\n\n" + ("word " * 130) + "\n\n# Examples\n\nx\n"
+    with pytest.raises(ValueError):
+        tool_create_concept(reg, "kb", "../escape", "Table", "T", "d", rich)
+
+
+def test_tool_init_bundle(tmp_path: Path):
+    reg = BundleRegistry({"kb": tmp_path / "newkb"})
+    res = tool_init_bundle(reg, "kb")
+    assert res["initialized"] is True
+    assert (tmp_path / "newkb" / "index.md").is_file()

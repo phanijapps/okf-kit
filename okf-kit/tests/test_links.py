@@ -1,7 +1,7 @@
-"""Tests for okf_kit.core.links — relative-link extraction, resolution,
-path-containment guard (SECURITY), adjacency + backlinks.
+"""Tests for okf_kit.core.links — cross-link extraction (relative + absolute),
+resolution, path-containment guard (SECURITY), adjacency + backlinks.
 
-REQ-CONS-10..13, SPEC §5.3.
+SPEC §5 (cross-linking), §5.3 (link semantics), §9.
 """
 from __future__ import annotations
 
@@ -79,9 +79,10 @@ def test_resolve_cid_path_symlink_escape_rejected(tmp_path):
 # --- extract_link_targets --------------------------------------------------
 
 
-def test_extract_link_targets_filters_external_and_absolute():
+def test_extract_link_targets_keeps_absolute_excludes_external():
+    # external (://) excluded; absolute (leading /) and relative both kept (SPEC §5)
     body = "[a](a.md) [b](b.md#x) [ext](https://e.com/y.md) [abs](/z.md) plain"
-    assert extract_link_targets(body) == ["a.md", "b.md"]
+    assert extract_link_targets(body) == ["a.md", "b.md", "/z.md"]
 
 
 # --- concept_outgoing ------------------------------------------------------
@@ -105,12 +106,30 @@ def test_concept_outgoing_drops_nonexistent(tmp_path):
     assert concept_outgoing(tmp_path, _concept(tmp_path, "a.md")) == ["b"]
 
 
-def test_concept_outgoing_excludes_external_absolute_index(tmp_path):
-    a_body = "---\ntype: T\n---\n[ext](https://x/y.md) [abs](/b.md) [idx](index.md) [rel](b.md)\n"
+def test_concept_outgoing_excludes_external_and_index(tmp_path):
+    a_body = "---\ntype: T\n---\n[ext](https://x/y.md) [idx](index.md) [rel](b.md)\n"
     _write(tmp_path, "a.md", a_body)
     _write(tmp_path, "b.md", "---\ntype: T\n---\nb\n")
     _write(tmp_path, "index.md", "# idx\n")
     assert concept_outgoing(tmp_path, _concept(tmp_path, "a.md")) == ["b"]
+
+
+def test_concept_outgoing_resolves_absolute_links(tmp_path):
+    # SPEC §5.1: absolute (bundle-relative) links are edges too — the recommended form.
+    _write(
+        tmp_path,
+        "tables/orders.md",
+        "---\ntype: Table\n---\n[customers](/tables/customers.md) and [sales](/datasets/sales.md)\n",
+    )
+    _write(tmp_path, "tables/customers.md", "---\ntype: Table\n---\nc\n")
+    _write(tmp_path, "datasets/sales.md", "---\ntype: Dataset\n---\ns\n")
+    c = _concept(tmp_path, "tables/orders.md")
+    assert concept_outgoing(tmp_path, c) == ["datasets/sales", "tables/customers"]
+
+
+def test_concept_outgoing_absolute_escape_dropped(tmp_path):
+    _write(tmp_path, "a.md", "---\ntype: T\n---\n[out](/../outside.md)\n")
+    assert concept_outgoing(tmp_path, _concept(tmp_path, "a.md")) == []
 
 
 def test_concept_outgoing_strips_fragment_and_dedups(tmp_path):
@@ -139,6 +158,13 @@ def test_build_adjacency_and_backlinks(tmp_path):
     assert back == {"a": [], "b": ["a"], "c": ["b"]}
 
 
+def test_build_adjacency_with_absolute_links(tmp_path):
+    _write(tmp_path, "orders.md", "---\ntype: T\n---\n[c](/customers.md)\n")
+    _write(tmp_path, "customers.md", "---\ntype: T\n---\nc\n")
+    concepts = [parse_concept(tmp_path / r, tmp_path) for r in ("orders.md", "customers.md")]
+    assert build_adjacency(tmp_path, concepts) == {"orders": ["customers"], "customers": []}
+
+
 def test_adjacency_skips_reserved_files(tmp_path):
     _write(tmp_path, "a.md", "---\ntype: T\n---\n[b](b.md)\n")
     _write(tmp_path, "b.md", "---\ntype: T\n---\nb\n")
@@ -155,6 +181,12 @@ def test_broken_links_detection(tmp_path):
     _write(tmp_path, "b.md", "---\ntype: T\n---\nb\n")
     c = parse_concept(tmp_path / "a.md", tmp_path)
     assert broken_links(tmp_path, c) == ["ghost.md", "../outside.md"]
+
+
+def test_broken_links_absolute(tmp_path):
+    _write(tmp_path, "a.md", "---\ntype: T\n---\n[ghost](/ghost.md)\n")
+    c = parse_concept(tmp_path / "a.md", tmp_path)
+    assert broken_links(tmp_path, c) == ["/ghost.md"]
 
 
 def test_iter_concept_files_skips_symlink_escape(tmp_path):
