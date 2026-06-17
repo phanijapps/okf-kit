@@ -1,12 +1,23 @@
 ---
 type: Module
-title: core/index + core/templates
-description: Build the bundle — init_bundle, create_concept (type templates), regenerate_indexes.
-tags: [core, build]
+title: core/build
+description: 'Authoring primitives: init_bundle, create_concept (type templates),
+  regenerate_indexes.'
 ---
+# Overview
 
-- `init_bundle(root)` — scaffolds a root `index.md` declaring `okf_version`.
-- `create_concept(root, cid, type, …)` — writes a concept from a built-in type template (Table/Metric/Runbook/Playbook/API/generic); cid-validated, parent contained, atomic exclusive create.
-- `regenerate_indexes(root)` — writes per-directory `index.md` files (concepts grouped by type, SPEC §6 style).
+`core/build` is the authoring side of the core: the primitives that create and regenerate a bundle. It backs both the `okf` CLI build commands and the MCP write tools, so there is no duplicated logic between them.
 
-These back the [`okf` CLI](/interfaces/okf-cli.md) build commands.
+`init_bundle(root)` scaffolds a bundle root, writing an `index.md` that declares `okf_version`. `create_concept(root, cid, type, ...)` writes a concept from a built-in type template — it validates the cid against the segment regex, contains the parent directory inside the bundle root, and uses an atomic exclusive create so an existing concept is never silently clobbered. `regenerate_indexes(root)` writes a per-directory `index.md` grouping concepts by type in the spec style.
+
+The type templates cover the common kinds — Table, Metric, Runbook, Playbook, API — with a generic fallback, and producers can use any custom type.
+
+# Examples
+
+```
+okf init mykb
+okf new mykb Table tables/users --title Users --desc "User accounts."
+okf index regen mykb
+```
+
+Related: [okf CLI](/interfaces/okf-cli.md), [path containment](/concepts/path-containment.md).

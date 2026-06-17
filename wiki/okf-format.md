@@ -1,18 +1,27 @@
 ---
 type: Overview
 title: OKF format
-description: An OKF bundle is a directory of Markdown concepts (YAML frontmatter + body) linked into a graph.
-tags: [okf, spec]
+description: An OKF bundle is a directory of Markdown concepts (YAML frontmatter +
+  body) linked into a graph.
 ---
+# Overview
 
-A **bundle** is a directory tree of UTF-8 `.md` files. Each file is one
-**concept**; its **concept id** is the path with `.md` removed (e.g.
-`core/parse.md` -> `core/parse`).
+A bundle is a directory tree of UTF-8 Markdown files. Each file is one concept; its concept id is the file path with `.md` removed (for example `core/parse.md` becomes `core/parse`). Concepts are cross-linked with standard Markdown links into a knowledge graph.
 
-- **Frontmatter** — a YAML block (`---` on line 1). `type` is the only required field; `title`/`description`/`resource`/`tags`/`timestamp` are recommended; extension keys are preserved.
-- **Body** — Markdown. `# Schema` / `# Examples` / `# Citations` are conventional headings.
-- **Links** — standard Markdown links are graph edges; absolute (`/core/parse.md`) is the recommended form, relative works too. See [`core/links`](/core/links.md).
-- **Reserved** — `index.md` (directory listing) and `log.md` (history) are not concepts.
+The frontmatter is a YAML block delimited by `---` on the first line. The only required field is `type`; `title`, `description`, `resource`, `tags`, and `timestamp` are recommended; producers may add any extension keys, which consumers preserve. The body is free-form Markdown; `# Schema`, `# Examples`, and `# Citations` are conventional headings.
 
-Conformance is permissive — see [SPEC §9](/concepts/conformance.md) and
-[`core/validate`](/core/validate.md).
+Conformance is deliberately permissive: consumers must not reject a bundle for missing optional fields, unknown types, extension keys, or broken links. See [conformance](/concepts/conformance.md) and [`core/validate`](/core/validate.md).
+
+# Examples
+
+```
+---
+type: Table
+title: Orders
+description: One row per order.
+---
+# Schema
+| order_id | STRING | unique id |
+```
+
+Links: [core/parse](/core/parse.md), [core/links](/core/links.md).

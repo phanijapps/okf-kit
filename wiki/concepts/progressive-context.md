@@ -1,16 +1,22 @@
 ---
 type: Concept
 title: Progressive context
-description: Load the minimum and expand on demand — search then read_concept(depth=0..N) — under a token budget.
-tags: [concept, context]
+description: 'Load the minimum and expand on demand: search then read_concept depth
+  0..N, under a token budget.'
 ---
+# Overview
 
-Agents load the minimum they need and expand on demand:
+Progressive context is OKF's progressive-disclosure principle applied to the LLM context window: an agent loads the minimum it needs and expands on demand, always under a token budget. It is the antidote to dumping a whole knowledge base into a prompt.
 
-1. **`search`** — a cheap hit list (id/title/type/snippet/score).
-2. **`read_concept(depth=0)`** — one full concept.
-3. **`read_concept(depth=1..N)`** — concept + N-hop neighborhood.
+The funnel has three steps. First, `search` returns a cheap hit list — id, title, type, snippet, score — with no full bodies. Second, `read_concept` at depth zero returns one full concept. Third, `read_concept` at depth one through N returns the concept plus its N-hop link neighborhood, concatenated in breadth-first order within the token budget, with a trailing marker naming any omissions.
 
-The seed is always full; neighbors are added in BFS order within `token_budget`,
-with a trailing marker naming any omissions. Deterministic. Implemented in
-[`core/context`](/core/context.md); exposed by [`okf-mcp`](/interfaces/okf-mcp.md).
+The seed concept is always included in full; ordering is deterministic; the walk is cycle-safe. Implemented in [`core/context`](/core/context.md); exposed by [`okf-mcp`](/interfaces/okf-mcp.md).
+
+# Examples
+
+```
+search(bundle='mykb', query='churn')
+read_concept(bundle='mykb', concept_id='metrics/churn', depth=1)
+```
+
+Related: [`core/search`](/core/search.md).
