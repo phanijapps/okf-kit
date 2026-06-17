@@ -9,7 +9,7 @@ description: Canonical reference for the okf CLI and okf-mcp server — each too
 
 Canonical reference for the `okf` CLI and the `okf-mcp` server. Each tool's **canonical description** — the agent trigger surface — lives in a `<!-- desc:start -->` … `<!-- desc:end -->` block below; the test suite asserts these match the strings embedded in [okf-mcp](/interfaces/okf-mcp.md), so this page and the server never drift (see [Tool doc sync](/conventions/tool-doc-sync.md)).
 
-All commands operate on a *bundle* — a directory of OKF `.md` concept files. The five MCP tools are `search`, `read_concept` (with `depth` for [progressive context](/architecture/progressive-context.md)), `validate`, `create_concept`, and `init_bundle`; the `okf` CLI mirrors them plus `index regen` and `serve`.
+Most commands operate on a *bundle* — a directory of OKF `.md` concept files. The five MCP tools are `search`, `read_concept` (with `depth` for [progressive context](/architecture/progressive-context.md)), `validate`, `create_concept`, and `init_bundle`; the `okf` CLI mirrors them plus `index regen` and `serve`. The CLI also has a skill-only `agent install` command for installing OKF skills into Claude Code or Codex.
 
 ## search
 
@@ -67,12 +67,13 @@ Initialize a registered OKF bundle root by writing root index.md with okf_versio
 
 ## Build commands (CLI only)
 
-The CLI builds thin stubs fast (`okf new`) and regenerates indexes; for rich, MCP-mediated authoring use `create_concept`. The `okf-author` skill runs the author → link → validate → index loop (see [Authoring](/guides/authoring.md)).
+The CLI builds thin stubs fast (`okf new`) and regenerates indexes; for rich, MCP-mediated authoring use `create_concept`. The `okf-author` skill runs the create/update → link → validate → index loop, and `okf-search` runs read-only progressive context (see [Authoring](/guides/authoring.md)).
 
 | Command | Purpose |
 |---|---|
 | `okf init <dir>` | Scaffold a bundle: root `index.md` with `okf_version`. |
 | `okf new <bundle> <type> <id>` | Create a concept from a type template. |
 | `okf index regen <bundle>` | Regenerate per-directory `index.md` (type-grouped). |
+| `okf agent install <claude-code|codex>` | Install `okf-search` and `okf-author` skills (`--scope project|user`, `--dry-run`, `--update`). Skill-only: no subagents, hooks, MCP config, or plugins. |
 
 Exit codes: `0` success, `1` conformance errors, `2` usage / not-found / IO.

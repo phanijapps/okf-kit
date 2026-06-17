@@ -41,3 +41,19 @@ def test_tool_reference_synced_with_mcp_descriptions():
     assert _extract_description(md, "validate") == _VALIDATE_DESC
     assert _extract_description(md, "create_concept") == _CREATE_DESC
     assert _extract_description(md, "init_bundle") == _INIT_DESC
+
+
+def test_agent_installer_docs_are_skill_only():
+    docs = [
+        Path(__file__).resolve().parent.parent.parent / "README.md",
+        WIKI / "interfaces" / "okf-cli.md",
+        WIKI / "guides" / "authoring.md",
+        TOOLS_REFERENCE,
+    ]
+    for path in docs:
+        text = path.read_text(encoding="utf-8")
+        compact = " ".join(text.split())
+        assert "okf agent install" in text, path
+        assert "okf-search" in text, path
+        assert "okf-author" in text, path
+        assert "does not install subagents" in compact or "no subagents" in compact, path

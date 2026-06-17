@@ -1,12 +1,13 @@
 ---
 type: Interface
 title: okf CLI
-description: 'The `okf` CLI — a thin argparse layer over the core: init / new / validate
-  / search / read / index / serve.'
+description: 'The `okf` CLI — a thin argparse layer over the core plus skill-only
+  agent installation: init / new / validate / search / read / index / serve /
+  agent install.'
 ---
 # Overview
 
-The `okf` command-line interface (`okf_kit/cli.py`) is a thin presentation layer over [the core](/architecture/overview.md). It scaffolds bundles, creates concepts, validates, searches, reads (with progressive context), regenerates indexes, and serves the web UI. There is no business logic here — each subcommand parses args and calls one core function.
+The `okf` command-line interface (`okf_kit/cli.py`) is a thin presentation layer over [the core](/architecture/overview.md). It scaffolds bundles, creates concepts, validates, searches, reads (with progressive context), regenerates indexes, serves the web UI, and installs OKF-owned agent skills. Bundle business logic stays in core; agent installation is a package/CLI concern outside `okf_kit.core`.
 
 # Definition
 
@@ -19,6 +20,7 @@ Subcommands:
 - **`read <bundle> <concept_id>`** — read a concept; `--depth` for the neighborhood, `--token-budget`.
 - **`index regen <bundle>`** — regenerate per-directory `index.md` files.
 - **`serve <bundle>`** — launch the read-only web UI (`--host`, `--port`).
+- **`agent install <claude-code|codex>`** — install `okf-search` and `okf-author` skills (`--scope project|user`, `--dry-run`, `--update`). This command is skill-only; it does not install subagents, hooks, MCP config, or plugins.
 
 Exit codes: `0` success, `1` conformance errors, `2` usage / not-found / IO errors. `ConceptNotFound` prints a "did you mean" hint.
 
@@ -30,6 +32,7 @@ uv run okf new mykb Table tables/users --title "Users" --desc "User accounts."
 uv run okf validate mykb
 uv run okf read mykb tables/users --depth 1
 uv run okf index regen mykb
+uv run okf agent install codex --scope project --dry-run
 ```
 
 The MCP server exposes the same core as agent tools — see [okf-mcp](/interfaces/okf-mcp.md); the browser UI is [okf serve](/interfaces/okf-serve.md). Tool docs stay in sync across `--help`, MCP descriptions, and the `reference/tools` wiki concept — see [Tool doc sync](/conventions/tool-doc-sync.md).
