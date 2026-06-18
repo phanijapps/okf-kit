@@ -70,6 +70,35 @@ def test_search_ranking_frontmatter_over_body(tmp_path):
     assert hits[0].cid == "in_title"  # title match outranks body-only match
 
 
+def test_search_indexes_extension_frontmatter_generically(tmp_path):
+    _bundle(
+        tmp_path,
+        {
+            "code/service.md": (
+                "---\n"
+                "type: CodeModule\n"
+                "title: Service\n"
+                "description: Generated code map.\n"
+                "source_path: gateway/src/service.py\n"
+                "repo: gateway\n"
+                "package: gateway-execution\n"
+                "---\n"
+                "No package name in body.\n"
+            ),
+            "notes/mention.md": (
+                "---\n"
+                "type: Note\n"
+                "title: Mention\n"
+                "description: Generated code map.\n"
+                "---\n"
+                "gateway-execution appears here in prose only.\n"
+            ),
+        },
+    )
+    hits = search(build_index(tmp_path), "gateway-execution")
+    assert hits[0].cid == "code/service"
+
+
 def test_search_limit(tmp_path):
     _bundle(tmp_path, {f"n{i}.md": "---\ntype: T\ntitle: item\ndescription: d\n---\nshared\n" for i in range(5)})
     assert len(search(build_index(tmp_path), "shared", limit=3)) == 3

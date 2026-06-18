@@ -86,9 +86,18 @@ def test_code_index_help(capsys):
     code, out, _ = _run(["code", "index", "--help"], capsys)
     assert code == 0
     assert "source code" in out
+    assert "CodeSummary" in out
     assert "okf-kit[treesitter]" in out
+    assert "summary-first" in out
+    assert "impact" in out
     assert "--language" in out
     assert "--update" in out
+    assert "--profile" in out
+    assert "--include-tests" in out
+    assert "--include" in out
+    assert "--exclude" in out
+    assert "--repo" in out
+    assert "compact" in out
     assert "typescript" in out
     assert "rust" in out
     assert "go" in out
@@ -148,6 +157,72 @@ def test_code_index_writes_valid_searchable_bundle(tmp_path: Path, capsys):
     code, out, _ = _run(["search", str(bundle), "Greeter"], capsys)
     assert code == 0
     assert "pkg/service.py" in out
+
+
+def test_code_index_scope_flags_control_generated_files(tmp_path: Path, capsys):
+    pytest.importorskip("tree_sitter_language_pack")
+    repo = tmp_path / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "tests").mkdir()
+    (repo / "src" / "service.py").write_text("class Service:\n    pass\n", encoding="utf-8")
+    (repo / "src" / "skip.py").write_text("class SkipMe:\n    pass\n", encoding="utf-8")
+    (repo / "tests" / "test_service.py").write_text(
+        "class ServiceTest:\n    pass\n",
+        encoding="utf-8",
+    )
+    bundle = tmp_path / "kb"
+
+    code, out, _ = _run(
+        [
+            "code",
+            "index",
+            str(repo),
+            str(bundle),
+            "--include",
+            "src/*.py",
+            "--exclude",
+            "src/skip.py",
+            "--include-tests",
+        ],
+        capsys,
+    )
+
+    assert code == 0
+    assert "indexed code: wrote 1" in out
+    assert (bundle / "code" / "src" / "service.py.md").is_file()
+    assert not (bundle / "code" / "src" / "skip.py.md").exists()
+    assert not (bundle / "code" / "tests" / "test_service.py.md").exists()
+
+
+def test_code_index_include_can_select_noisy_files(tmp_path: Path, capsys):
+    pytest.importorskip("tree_sitter_language_pack")
+    repo = tmp_path / "repo"
+    (repo / "dist").mkdir(parents=True)
+    (repo / "static").mkdir()
+    (repo / "src").mkdir()
+    (repo / "src" / "service.py").write_text("class Service:\n    pass\n", encoding="utf-8")
+    (repo / "dist" / "generated.py").write_text("class Generated:\n    pass\n", encoding="utf-8")
+    (repo / "static" / "app.py").write_text("class StaticAsset:\n    pass\n", encoding="utf-8")
+    bundle = tmp_path / "kb"
+
+    code, out, _ = _run(
+        [
+            "code",
+            "index",
+            str(repo),
+            str(bundle),
+            "--include",
+            "dist/generated.py",
+            "--include",
+            "static/app.py",
+        ],
+        capsys,
+    )
+
+    assert code == 0
+    assert "indexed code: wrote 2" in out
+    assert (bundle / "code" / "dist" / "generated.py.md").is_file()
+    assert (bundle / "code" / "static" / "app.py.md").is_file()
 
 
 def test_code_index_refreshes_generated_concepts_by_default(tmp_path: Path, capsys):

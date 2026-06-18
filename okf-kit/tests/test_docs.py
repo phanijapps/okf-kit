@@ -71,6 +71,13 @@ def test_code_index_docs_are_syntax_grounded_and_polyglot():
         compact = " ".join(text.split()).lower()
         assert "okf-kit[treesitter]" in text, path
         assert "okf code index" in text, path
+        assert "--profile compact" in compact, path
+        assert "--include-tests" in compact, path
+        assert "--include" in compact, path
+        assert "--exclude" in compact, path
+        assert "--repo" in compact, path
+        assert "codesummary" in compact, path
+        assert "reverse-dependent" in compact or "reverse dependent" in compact, path
         assert "python" in compact, path
         assert "typescript" in compact, path
         assert "rust" in compact, path

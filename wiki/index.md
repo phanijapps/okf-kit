@@ -4,6 +4,8 @@ okf_version: '0.1'
 
 # Subdirectories
 * [architecture](architecture/index.md)
+* [code](code/index.md)
+* [code-summaries](code-summaries/index.md)
 * [conventions](conventions/index.md)
 * [core](core/index.md)
 * [format](format/index.md)

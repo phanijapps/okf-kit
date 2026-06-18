@@ -19,7 +19,7 @@ Subcommands:
 - **`search <bundle> <query>`** — full-text search; `--type` / `--tag` filters, `--limit`, `--json`.
 - **`read <bundle> <concept_id>`** — read a concept; `--depth` for the neighborhood, `--token-budget`.
 - **`index regen <bundle>`** — regenerate per-directory `index.md` files.
-- **`code index <repo> <bundle>`** — index or refresh source code into OKF `CodeModule` concepts (`--language` repeatable, default all supported languages; `--update` accepted for compatibility); requires `okf-kit[treesitter]`. Supported languages: Python, Java, Scala, Rust, Go, Kotlin, Perl, C#, PHP, TypeScript, JavaScript, and HTML. Generated impact notes are syntax-derived candidates, not semantic proof.
+- **`code index <workspace> <bundle>`** — index or refresh source code into compact OKF `CodeSummary` and `CodeModule` concepts (`--profile compact|full`, `--language` repeatable, `--repo`, repeatable `--include` / `--exclude`, `--include-tests`; `--update` accepted for compatibility); requires `okf-kit[treesitter]`. Supported languages: Python, Java, Scala, Rust, Go, Kotlin, Perl, C#, PHP, TypeScript, JavaScript, and HTML. Generated dependency and reverse-dependent impact notes are syntax-derived candidates, not semantic proof.
 - **`serve <bundle>`** — launch the read-only web UI (`--host`, `--port`).
 - **`agent install <claude-code|codex>`** — install or refresh `okf-search`, `okf-author`, and `okf-code` skills (`--scope project|user`, `--dry-run`; `--update` is accepted for compatibility). This command is skill-only; it does not install subagents, hooks, MCP config, or plugins.
 
@@ -33,7 +33,7 @@ uv run okf new mykb Table tables/users --title "Users" --desc "User accounts."
 uv run okf validate mykb
 uv run okf read mykb tables/users --depth 1
 uv run okf index regen mykb
-uv run okf code index /path/to/repo codekb
+uv run okf code index /path/to/workspace codekb --profile compact
 uv run okf agent install codex --scope project --dry-run
 ```
 

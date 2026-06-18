@@ -19,13 +19,17 @@ The author → link → validate → index loop:
 5. **Validate** — `okf validate mykb`. Fix errors (missing frontmatter, empty `type`); warnings/info are non-blocking. See [Conformance](/format/conformance.md).
 6. **Index** — `okf index regen mykb` writes per-directory `index.md`. **Caution:** regen overwrites each `index.md` body — back up a hand-authored root first (see [Backlog](/project/backlog.md)).
 
-For code repositories, install `okf-kit[treesitter]` and run
-`okf code index <repo> <bundle>` to generate managed `CodeModule` concepts under
-`code/`. The default scans Python, Java, Scala, Rust, Go, Kotlin, Perl, C#,
-PHP, TypeScript, JavaScript, and HTML; repeat `--language` to narrow the run.
-Then search and read those concepts the same way: `okf search <bundle>
-"symbol"` followed by `okf read <bundle> <id> --depth 1`. Generated impact
-notes are syntax-derived candidates, not complete semantic proof.
+For code repositories or multi-repository workspaces, install
+`okf-kit[treesitter]` and run `okf code index <workspace> <bundle>` to generate
+managed `CodeSummary` concepts under `code-summaries/` and `CodeModule`
+concepts under `code/`. The default `--profile compact` scans Python, Java,
+Scala, Rust, Go, Kotlin, Perl, C#, PHP, TypeScript, JavaScript, and HTML; repeat
+`--language` to narrow the run. Use `--repo` to select a workspace repository,
+repeat `--include` / `--exclude` for scoped globs, and add `--include-tests`
+only when test impact matters. Then search summaries first, read one target at
+depth 0, and use `okf read <bundle> <id> --depth 1` for dependency and
+reverse-dependent context. Generated impact notes are syntax-derived candidates,
+not complete semantic proof.
 
 # Definition
 

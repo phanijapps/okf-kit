@@ -93,16 +93,22 @@ def _build_parser() -> argparse.ArgumentParser:
     p_code_index = code_sub.add_parser(
         "index",
         help=(
-            "Index source code into OKF CodeModule concepts "
+            "Index source code into compact OKF CodeSummary and CodeModule concepts "
             "(requires okf-kit[treesitter])."
         ),
         description=(
-            "Index source code into OKF CodeModule concepts. "
-            "Supported languages require okf-kit[treesitter]."
+            "Index source code into compact OKF CodeSummary entry points and "
+            "CodeModule concepts for summary-first search and depth-1 impact "
+            "analysis. Default scope skips tests, vendor/build/generated/static "
+            "noise unless included explicitly. Supported languages require "
+            "okf-kit[treesitter]."
         ),
     )
-    p_code_index.add_argument("repo", help="Source repository root to index.")
-    p_code_index.add_argument("bundle", help="OKF bundle root to write CodeModule concepts.")
+    p_code_index.add_argument("workspace", help="Source repository or workspace root to index.")
+    p_code_index.add_argument(
+        "bundle",
+        help="OKF bundle root to write CodeSummary and CodeModule concepts.",
+    )
     p_code_index.add_argument(
         "--language",
         action="append",
@@ -120,6 +126,36 @@ def _build_parser() -> argparse.ArgumentParser:
             "Accepted for compatibility; generated code concepts refresh by default "
             "while preserving narrative notes."
         ),
+    )
+    p_code_index.add_argument(
+        "--profile",
+        choices=("compact", "full"),
+        default="compact",
+        help="Generated concept detail profile. Default: compact.",
+    )
+    p_code_index.add_argument(
+        "--include-tests",
+        action="store_true",
+        help="Include test files in the generated code concepts.",
+    )
+    p_code_index.add_argument(
+        "--include",
+        action="append",
+        default=[],
+        help="Workspace-relative glob to include; repeat for multiple patterns.",
+    )
+    p_code_index.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help="Workspace-relative glob to exclude; repeat for multiple patterns.",
+    )
+    p_code_index.add_argument(
+        "--repo",
+        dest="repos",
+        action="append",
+        default=[],
+        help="Discovered repository id or workspace-relative repository path to index.",
     )
 
     p_serve = sub.add_parser(
@@ -240,10 +276,15 @@ def _cmd_code_index(args: argparse.Namespace) -> int:
     from okf_kit.code.indexer import index_codebase
 
     result = index_codebase(
-        Path(args.repo),
+        Path(args.workspace),
         Path(args.bundle),
         languages=args.language,
         update=args.update,
+        profile=args.profile,
+        include_tests=args.include_tests,
+        include=args.include,
+        exclude=args.exclude,
+        repos=args.repos,
     )
     print(
         "indexed code: "

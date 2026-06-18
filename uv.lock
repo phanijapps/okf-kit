@@ -458,11 +458,23 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "tree-sitter" },
+    { name = "tree-sitter-language-pack" },
     { name = "types-pyyaml" },
 ]
 treesitter = [
     { name = "tree-sitter" },
     { name = "tree-sitter-language-pack" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "tree-sitter" },
+    { name = "tree-sitter-language-pack" },
+    { name = "types-pyyaml" },
 ]
 
 [package.metadata]
@@ -473,11 +485,23 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
+    { name = "tree-sitter", marker = "extra == 'dev'", specifier = ">=0.25.2" },
     { name = "tree-sitter", marker = "extra == 'treesitter'", specifier = ">=0.25.2" },
+    { name = "tree-sitter-language-pack", marker = "extra == 'dev'", specifier = ">=1.8.1" },
     { name = "tree-sitter-language-pack", marker = "extra == 'treesitter'", specifier = ">=1.8.1" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
 ]
 provides-extras = ["dev", "treesitter"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "ruff", specifier = ">=0.6" },
+    { name = "tree-sitter", specifier = ">=0.25.2" },
+    { name = "tree-sitter-language-pack", specifier = ">=1.8.1" },
+    { name = "types-pyyaml", specifier = ">=6.0" },
+]
 
 [[package]]
 name = "packaging"

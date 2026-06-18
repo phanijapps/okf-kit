@@ -26,6 +26,17 @@ _NAME_NODE_KINDS = (
 
 @dataclass(frozen=True)
 class LanguageAdapter:
+    """Tree-sitter extraction configuration for one source language.
+
+    Attributes:
+        language: Public language name used by OKF.
+        parser_name: Parser name passed to ``tree_sitter_language_pack``.
+        extensions: File extensions handled by the adapter.
+        symbol_kinds: Tree-sitter node kinds mapped to OKF symbol kinds.
+        import_kinds: Tree-sitter node kinds that should be treated as imports.
+        parser_by_extension: Optional parser override by file extension.
+    """
+
     language: str
     parser_name: str
     extensions: tuple[str, ...]
@@ -34,6 +45,20 @@ class LanguageAdapter:
     parser_by_extension: dict[str, str] | None = None
 
     def extract(self, path: Path, repo_root: Path) -> CodeModule:
+        """Extract code facts from a source file.
+
+        Args:
+            path: Source file path.
+            repo_root: Repository root used for relative source paths.
+
+        Returns:
+            Extracted module facts.
+
+        Raises:
+            ValueError: If ``path`` escapes ``repo_root`` or has an unsupported
+                extension for this adapter.
+        """
+
         repo = Path(repo_root).resolve()
         source_path = Path(path).resolve()
         if not is_within(source_path, repo):

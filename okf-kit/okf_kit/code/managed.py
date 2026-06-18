@@ -8,6 +8,20 @@ MANAGED_END = "<!-- okf-code:end -->"
 
 
 def merge_managed(existing: str, generated: str) -> str:
+    """Merge a generated body into an existing concept.
+
+    Args:
+        existing: Existing Markdown concept, possibly with human-authored text
+            outside the managed generated section.
+        generated: Newly rendered generated Markdown concept.
+
+    Returns:
+        Markdown that preserves human-authored text and replaces generated text.
+
+    Raises:
+        ValueError: If the generated concept is missing managed-section markers.
+    """
+
     generated_result = split_generated(generated)
     if generated_result is None:
         raise ValueError("generated concept is missing okf-code markers")
@@ -25,6 +39,16 @@ def merge_managed(existing: str, generated: str) -> str:
 
 
 def split_generated(text: str) -> tuple[str, str, str] | None:
+    """Split a concept around its managed generated section.
+
+    Args:
+        text: Markdown concept text.
+
+    Returns:
+        ``(prefix, managed_body, suffix)`` when markers are present, otherwise
+        ``None``.
+    """
+
     start = text.find(MANAGED_START)
     end = text.find(MANAGED_END)
     if start < 0 or end < start:
