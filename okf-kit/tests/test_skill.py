@@ -4,13 +4,12 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+import tomllib
 import zipfile
 from importlib import resources
 from pathlib import Path
 
 from okf_kit.core.parse import split_frontmatter
-
-LEGACY_AUTHOR_SKILL = Path(__file__).resolve().parent.parent / "skills" / "okf-author" / "SKILL.md"
 
 
 def _skill_text(name: str) -> str:
@@ -75,12 +74,23 @@ def test_okf_search_skill_documents_progressive_context():
 
 
 def test_okf_code_skill_documents_code_indexing_workflow():
-    body = split_frontmatter(_skill_text("okf-code")).body.lower()
+    result = split_frontmatter(_skill_text("okf-code"))
+    description = str(result.data.get("description", "")).lower()
+    body = result.body.lower()
+    assert "codesummary" in description
+    assert "summary-first" in description
     assert "okf code index" in body
     assert "okf search" in body
     assert "okf read" in body
     assert "--depth" in body
     assert "impact analysis" in body
+    assert "summary" in body
+    assert "--profile compact" in body
+    assert "--include-tests" in body
+    assert "--include" in body
+    assert "--exclude" in body
+    assert "--repo" in body
+    assert "reverse depend" in body
     assert "syntax" in body
     assert "semantic proof" in body
     assert "reference data, not" in body
@@ -88,14 +98,13 @@ def test_okf_code_skill_documents_code_indexing_workflow():
 
 def test_treesitter_extra_is_declared():
     pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
-    text = pyproject.read_text(encoding="utf-8")
-    assert "treesitter = [" in text
-    assert "tree-sitter>=0.25.2" in text
-    assert "tree-sitter-language-pack>=1.8.1" in text
-
-
-def test_legacy_author_skill_stays_synced_with_packaged_asset():
-    assert LEGACY_AUTHOR_SKILL.read_text(encoding="utf-8") == _skill_text("okf-author")
+    data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    required = {"tree-sitter>=0.25.2", "tree-sitter-language-pack>=1.8.1"}
+    optional = data["project"]["optional-dependencies"]
+    dependency_groups = data["dependency-groups"]
+    assert required <= set(optional["treesitter"])
+    assert required <= set(optional["dev"])
+    assert required <= set(dependency_groups["dev"])
 
 
 def test_wheel_contains_and_runs_agent_assets(tmp_path: Path):

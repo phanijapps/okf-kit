@@ -2,11 +2,11 @@
 
 ## Overview
 
-`okf-kit` implements the **Open Knowledge Format (OKF v0.1)** as **agent-native tooling**, not a hosted web app. An OKF bundle is a directory of Markdown files (YAML frontmatter + body); each file is one *concept*; the file path is its id; Markdown links (relative and absolute) form a knowledge graph. See `_docs/requirements.md` for the full spec — the **data model and conformance rules (§2–4) are authoritative and unchanged**.
+`okf-kit` implements the **Open Knowledge Format (OKF v0.1)** as **agent-native tooling**, not a hosted web app. An OKF bundle is a directory of Markdown files (YAML frontmatter + body); each file is one *concept*; the file path is its id; Markdown links (relative and absolute) form a knowledge graph. See `wiki/format/okf-format.md` and `wiki/format/conformance.md` for the format and conformance rules.
 
 **Delivery vehicle (approved 2026-06-16):** a Python core library exposed two ways — an `okf` **CLI** and an `okf-mcp` **MCP server** (the universal layer for Claude Code, Antigravity, and any MCP client). No REST, no GraphQL, no hosted web wiki. A Claude Code **pack** (skills/subagents/hooks) wraps the MCP server in v0.2.
 
-**v0.1 scope = build + use a KB:** scaffold (`okf init`), author (`okf new` + the `okf-author` skill), validate (SPEC §9), search, progressive-context read, regenerate `index.md` — shipped as a Python core + `okf` CLI + a 5-tool `okf-mcp` server + the `okf-author` skill. The full pack, single-file viewer, producer, governance, and multi-level federation are deferred — see `_docs/2026-06-16-okf-plugin-v0.1-design.md` §2/§13.
+**v0.1 scope = build + use a KB:** scaffold (`okf init`), author (`okf new` + the `okf-author` skill), validate (SPEC §9), search, progressive-context read, regenerate `index.md` — shipped as a Python core + `okf` CLI + a 5-tool `okf-mcp` server + the `okf-author` skill. The full pack, single-file viewer, producer, governance, and multi-level federation are deferred — see `wiki/project/backlog.md`.
 
 ### Two design commitments (load-bearing)
 - **Progressive context** — agents load the minimum and expand on demand under a token budget: `search` (cheap hit list) → `read_concept(depth=0)` (one concept) → `read_concept(depth=1..N)` (N-hop neighborhood). Design §7.
@@ -31,8 +31,7 @@ okf-kit/
 ├── tests/                # unit (core, 100%), cli (subprocess), mcp (in-memory client), fixtures/
 ├── skills/okf-author/    # v0.1 authoring skill (SKILL.md + template assets)
 ├── agents/ hooks/        # RESERVED — rest populated in v0.2 Claude Code pack
-wiki/                     # the OKF knowledge bundle — dogfood docs (tools, uri-scheme, authoring, backlog)
-_docs/                    # requirements.md + design doc (planning)
+wiki/                     # the OKF knowledge bundle — dogfood docs (format, tools, uri-scheme, authoring, backlog)
 pyproject.toml            # project + entry points: okf, okf-mcp
 ```
 
@@ -62,6 +61,6 @@ uv run okf-mcp                    # MCP server (stdio) — point an MCP client a
 
 ## Pointers
 
-- Design & plan: `_docs/2026-06-16-okf-plugin-v0.1-design.md`
-- Full requirements: `_docs/requirements.md` (data model §2–4 authoritative)
+- Design & plan: `wiki/architecture/overview.md`, `wiki/project/backlog.md`
+- Format and conformance: `wiki/format/okf-format.md`, `wiki/format/conformance.md`
 - Docs home (the `wiki/` bundle): `wiki/reference/tools.md`, `wiki/interfaces/okf-uri-scheme.md`, `wiki/guides/authoring.md`, `wiki/project/backlog.md`

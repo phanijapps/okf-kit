@@ -22,8 +22,20 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "types-PyYAML>=6.0",
+    "tree-sitter>=0.25.2",
+    "tree-sitter-language-pack>=1.8.1",
 ]
 treesitter = [
+    "tree-sitter>=0.25.2",
+    "tree-sitter-language-pack>=1.8.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "types-PyYAML>=6.0",
     "tree-sitter>=0.25.2",
     "tree-sitter-language-pack>=1.8.1",
 ]
@@ -36,8 +48,17 @@ okf-mcp = "okf_kit.mcp:main"
 [tool.hatch.build.targets.wheel]
 packages = ["okf-kit/okf_kit"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"THIRD_PARTY_NOTICES.md" = "THIRD_PARTY_NOTICES.md"
+
 [tool.hatch.build.targets.sdist]
-include = ["okf-kit/okf_kit", "okf-kit/tests", "okf-kit/skills", "README.md"]
+include = [
+    "okf-kit/okf_kit",
+    "okf-kit/tests",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["okf-kit"]

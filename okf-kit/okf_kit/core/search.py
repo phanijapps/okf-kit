@@ -17,7 +17,7 @@ from okf_kit.core.links import iter_concept_files
 from okf_kit.core.parse import parse_concept
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
-_WEIGHTS = {"title": 5, "tag": 4, "type": 3, "description": 2, "body": 1}
+_WEIGHTS = {"title": 5, "tag": 4, "frontmatter": 3, "type": 3, "description": 2, "body": 1}
 _EXACT_TITLE_BOOST = 100.0
 
 
@@ -37,8 +37,28 @@ def _fm_str_list(fm: dict[str, Any], key: str) -> list[str]:
     return [item for item in value if isinstance(item, str)]
 
 
+def _frontmatter_text(fm: dict[str, Any]) -> str:
+    values: list[str] = []
+    for value in fm.values():
+        if isinstance(value, str):
+            values.append(value)
+        elif isinstance(value, list):
+            values.extend(item for item in value if isinstance(item, str))
+    return " ".join(values)
+
+
 @dataclass
 class Hit:
+    """Ranked search result.
+
+    Attributes:
+        cid: Concept id for the hit.
+        title: Display title, falling back to the concept id when missing.
+        type: OKF concept type.
+        snippet: Short matching text excerpt.
+        score: Weighted ranking score.
+    """
+
     cid: str
     title: str
     type: str
@@ -58,14 +78,27 @@ class _Doc:
     tag_terms: Counter[str]
     type_terms: Counter[str]
     desc_terms: Counter[str]
+    frontmatter_terms: Counter[str]
     body_terms: Counter[str]
 
 
 @dataclass
 class Index:
+    """In-memory search index for one OKF bundle.
+
+    Attributes:
+        docs: Indexed concept documents.
+    """
+
     docs: list[_Doc] = field(default_factory=list)
 
     def to_dict(self) -> list[dict[str, Any]]:
+        """Serialize index metadata for diagnostics.
+
+        Returns:
+            List of public concept metadata dictionaries.
+        """
+
         return [
             {"cid": d.cid, "title": d.title, "type": d.type, "tags": d.tags}
             for d in self.docs
@@ -73,7 +106,15 @@ class Index:
 
 
 def build_index(root: Path) -> Index:
-    """Build a search index over all non-reserved concepts under ``root``."""
+    """Build a search index over a bundle.
+
+    Args:
+        root: OKF bundle root.
+
+    Returns:
+        In-memory index of all non-reserved concepts under ``root``.
+    """
+
     root = Path(root).resolve()
     docs: list[_Doc] = []
     for md in iter_concept_files(root):
@@ -96,6 +137,7 @@ def build_index(root: Path) -> Index:
                 tag_terms=Counter(_tokenize(" ".join(tags))),
                 type_terms=Counter(_tokenize(type_value)),
                 desc_terms=Counter(_tokenize(description)),
+                frontmatter_terms=Counter(_tokenize(_frontmatter_text(concept.frontmatter))),
                 body_terms=Counter(_tokenize(concept.body)),
             )
         )
@@ -109,7 +151,19 @@ def search(
     tag: list[str] | None = None,
     limit: int = 20,
 ) -> list[Hit]:
-    """Ranked search. Empty ``q`` returns all concepts (filtered), by cid."""
+    """Search an OKF index.
+
+    Args:
+        index: Search index built by ``build_index``.
+        q: Query string. Empty queries return all filtered concepts by id.
+        type: Optional allowed concept types.
+        tag: Optional required tag set; any matching tag qualifies.
+        limit: Maximum number of hits to return.
+
+    Returns:
+        Ranked hits sorted by score descending, then concept id.
+    """
+
     q_terms = _tokenize(q)
     norm_query = q.strip().lower()
     type_filter = set(type) if type else None
@@ -149,6 +203,7 @@ def _score(norm_query: str, q_terms: list[str], doc: _Doc) -> float:
             + doc.tag_terms.get(term, 0) * _WEIGHTS["tag"]
             + doc.type_terms.get(term, 0) * _WEIGHTS["type"]
             + doc.desc_terms.get(term, 0) * _WEIGHTS["description"]
+            + doc.frontmatter_terms.get(term, 0) * _WEIGHTS["frontmatter"]
             + doc.body_terms.get(term, 0) * _WEIGHTS["body"]
         )
         score += tf

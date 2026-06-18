@@ -116,25 +116,30 @@ custom value). The only required frontmatter field is `type`.
 
 ## Index a codebase
 
-With the `treesitter` extra installed, generate a code map from a repository
-into an OKF bundle:
+With the `treesitter` extra installed, generate a compact code map from a
+repository or multi-repository workspace into an OKF bundle:
 
 ```bash
-uv run okf code index /absolute/path/to/repo codekb
+uv run okf code index /absolute/path/to/workspace codekb
 uv run okf validate codekb
-uv run okf search codekb UserService
+uv run okf search codekb UserService --type CodeModule
 uv run okf read codekb code/pkg/service.py --depth 1
 ```
 
-`okf code index` writes managed `CodeModule` concepts under `code/`, preserving
-the source extension in concept ids so polyglot repositories do not collide
-(`src/app.py` becomes `code/src/app.py`). By default it scans all supported
-languages; repeat `--language` to limit the run, for example
-`--language python --language typescript`. Re-running refreshes generated
+`okf code index` writes managed `CodeSummary` concepts under `code-summaries/`
+and managed `CodeModule` concepts under `code/`. The default `--profile compact`
+keeps file concepts bounded while still synthesizing purpose, role, high-signal
+symbols, dependency context, reverse dependents, impact hints, and citations.
+It preserves source extensions in concept ids so polyglot repositories do not
+collide (`src/app.py` becomes `code/src/app.py`); in multi-repository
+workspaces, the repo id is included in generated ids and frontmatter. Repeat
+`--language` to limit languages, use `--repo` to narrow workspace repositories,
+use repeatable `--include` / `--exclude` globs for scope, and add
+`--include-tests` only when test concepts matter. Re-running refreshes generated
 sections while preserving hand-authored narrative outside the managed block;
 `--update` is accepted for compatibility. Use the packaged `okf-code` skill for
-the agent workflow: index first, then use existing `okf search` and
-`okf read --depth N` over the generated concepts.
+the agent workflow: search summaries first, read one target at depth 0, then use
+`okf read --depth 1` for dependency and reverse-dependent impact context.
 
 ## Use it from an agent (MCP)
 
@@ -255,8 +260,9 @@ anticipates. **Git integration** is the only intentionally-deferred Phase-2 item
 
 ## Documentation
 
-- [`_docs/requirements.md`](_docs/requirements.md) — full OKF requirements (data model §2–4 authoritative).
-- [`_docs/2026-06-16-okf-plugin-v0.1-design.md`](_docs/2026-06-16-okf-plugin-v0.1-design.md) — v0.1 design & decisions.
+- [`wiki/format/okf-format.md`](wiki/format/okf-format.md) — OKF bundle and concept format.
+- [`wiki/format/conformance.md`](wiki/format/conformance.md) — validation and conformance behavior.
+- [`wiki/architecture/overview.md`](wiki/architecture/overview.md) — core architecture and progressive context.
 - [`AGENTS.md`](AGENTS.md) — build rules and structure.
 - [`wiki/`](wiki/) — the OKF knowledge bundle: tool reference, progressive context, URI scheme, authoring, backlog.
 - [`wiki/project/backlog.md`](wiki/project/backlog.md) — deferred findings and future work.
@@ -268,6 +274,10 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md). Gates (`ruff`, `mypy --strict`,
 
 ## License
 
-MIT License — see [`LICENSE`](LICENSE). (The OKF format itself is a separate,
-vendor-neutral spec published by Google under Apache 2.0; this project is
-MIT-licensed.)
+okf-kit is licensed under the MIT License — see [`LICENSE`](LICENSE).
+
+The Open Knowledge Format specification is separate Apache-2.0 licensed
+material published by Google Cloud. okf-kit is an independent implementation of
+OKF v0.1; it is not an official Google product and is not endorsed by Google.
+See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for OKF attribution and
+bundled browser asset notices.

@@ -6,16 +6,47 @@ from typing import Any, cast
 
 
 def parse_source(language: str, source: str) -> Any:
+    """Parse source text with a Tree-sitter language parser.
+
+    Args:
+        language: Parser name understood by ``tree_sitter_language_pack``.
+        source: Source text to parse.
+
+    Returns:
+        Tree-sitter parse tree.
+
+    Raises:
+        ValueError: If Tree-sitter parser support is not installed.
+    """
+
     parser = _parser(language)
     return parser.parse(source)
 
 
 def root_node(tree: Any) -> Any:
+    """Return a parse tree root node.
+
+    Args:
+        tree: Tree-sitter parse tree.
+
+    Returns:
+        Root syntax node.
+    """
+
     value = tree.root_node
     return value() if callable(value) else value
 
 
 def node_kind(node: Any) -> str:
+    """Return a node kind across Tree-sitter API variants.
+
+    Args:
+        node: Tree-sitter syntax node.
+
+    Returns:
+        Node kind or type as a string.
+    """
+
     try:
         value = node.type
     except AttributeError:
@@ -25,21 +56,59 @@ def node_kind(node: Any) -> str:
 
 
 def children(node: Any) -> list[Any]:
+    """Return all child nodes for a syntax node.
+
+    Args:
+        node: Tree-sitter syntax node.
+
+    Returns:
+        Child nodes in parser order.
+    """
+
     return [node.child(idx) for idx in range(child_count(node))]
 
 
 def child_count(node: Any) -> int:
+    """Return a node child count across Tree-sitter API variants.
+
+    Args:
+        node: Tree-sitter syntax node.
+
+    Returns:
+        Number of child nodes.
+    """
+
     value = node.child_count
     resolved = value() if callable(value) else value
     return int(resolved)
 
 
 def child_by_field_name(node: Any, field: str) -> Any | None:
+    """Return a named child field from a syntax node.
+
+    Args:
+        node: Tree-sitter syntax node.
+        field: Field name to read.
+
+    Returns:
+        Matching child node, or ``None`` when absent.
+    """
+
     value = node.child_by_field_name(field)
     return value
 
 
 def node_text(node: Any, source_bytes: bytes) -> str:
+    """Return source text for a syntax node.
+
+    Args:
+        node: Tree-sitter syntax node.
+        source_bytes: Full source text encoded as bytes.
+
+    Returns:
+        Decoded node text.
+    """
+
     try:
         text = node.text
     except AttributeError:
@@ -54,6 +123,15 @@ def node_text(node: Any, source_bytes: bytes) -> str:
 
 
 def byte_range(node: Any) -> tuple[int, int]:
+    """Return byte offsets for a syntax node.
+
+    Args:
+        node: Tree-sitter syntax node.
+
+    Returns:
+        ``(start, end)`` byte offsets.
+    """
+
     try:
         value = node.byte_range
     except AttributeError:
@@ -68,14 +146,43 @@ def byte_range(node: Any) -> tuple[int, int]:
 
 
 def start_line(node: Any) -> int:
+    """Return a one-based start line for a syntax node.
+
+    Args:
+        node: Tree-sitter syntax node.
+
+    Returns:
+        One-based start line.
+    """
+
     return _point_row(_node_start(node)) + 1
 
 
 def end_line(node: Any) -> int:
+    """Return a one-based end line for a syntax node.
+
+    Args:
+        node: Tree-sitter syntax node.
+
+    Returns:
+        One-based end line.
+    """
+
     return _point_row(_node_end(node)) + 1
 
 
 def first_descendant_text(node: Any, source_bytes: bytes, kinds: tuple[str, ...]) -> str | None:
+    """Find text for the first descendant whose kind is allowed.
+
+    Args:
+        node: Tree-sitter syntax node to search.
+        source_bytes: Full source text encoded as bytes.
+        kinds: Allowed node kinds.
+
+    Returns:
+        Descendant text, or ``None`` when no matching descendant exists.
+    """
+
     if node_kind(node) in kinds:
         return node_text(node, source_bytes)
     for child in children(node):

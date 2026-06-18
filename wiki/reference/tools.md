@@ -74,7 +74,7 @@ The CLI builds thin stubs fast (`okf new`) and regenerates indexes; for rich, MC
 | `okf init <dir>` | Scaffold a bundle: root `index.md` with `okf_version`. |
 | `okf new <bundle> <type> <id>` | Create a concept from a type template. |
 | `okf index regen <bundle>` | Regenerate per-directory `index.md` (type-grouped). |
-| `okf code index <repo> <bundle>` | Index source code into OKF `CodeModule` concepts for Python, Java, Scala, Rust, Go, Kotlin, Perl, C#, PHP, TypeScript, JavaScript, and HTML; requires `okf-kit[treesitter]`. Syntax-derived impact notes are candidates, not semantic proof. |
+| `okf code index <workspace> <bundle>` | Index source code into compact OKF `CodeSummary` and `CodeModule` concepts for Python, Java, Scala, Rust, Go, Kotlin, Perl, C#, PHP, TypeScript, JavaScript, and HTML; supports `--profile compact|full`, `--repo`, `--include`, `--exclude`, and `--include-tests`; requires `okf-kit[treesitter]`. Syntax-derived dependency and reverse-dependent impact notes are candidates, not semantic proof. |
 | `okf agent install <claude-code|codex>` | Install or refresh `okf-search`, `okf-author`, and `okf-code` skills (`--scope project|user`, `--dry-run`; `--update` is accepted for compatibility). Skill-only: no subagents, hooks, MCP config, or plugins. |
 
 Exit codes: `0` success, `1` conformance errors, `2` usage / not-found / IO.
